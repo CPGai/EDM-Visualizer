@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDM Visualizer Pro</title>
+    <style>
+        /* This section defines how the app looks (Dark EDM Theme) */
+        body {
+            margin: 0;
+            background: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        #ui-root {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            backdrop-filter: blur(10px);
+            width: 300px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #00ffff;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: #aaa;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* The Palette Swatches */
+        .palette {
+            display: flex;
+            gap: 8px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .swatch {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            border: 1px solid #555;
+            transition: transform 0.2s;
+        }
+
+        .swatch:hover {
+            transform: scale(1.1);
+            border-color: #fff;
+        }
+
+        /* The Buttons */
+        button {
+            background: #00ffff;
+            color: #000;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        button:hover {
+            background: #00cccc;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: #aaa;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        #audio-monitor {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            color: #0f0;
+            margin-top: 15px;
+            background: #111;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        input[type="file"] {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            color: #888;
+        }
+    </style>
+
+
+</head>
+
+<body>
+    <!-- This is the control panel the user interacts with -->
+    <div id="ui-root">
+        <h2>Visualizer Setup</h2>
+
+        <div style="margin-bottom: 25px;">
+            <label>1. COLOR INSPIRATION</label>
+            <input type="file" id="imgUpload" accept="image/*">
+            <div id="paletteContainer" class="palette">
+                <!-- Color swatches will appear here after upload -->
+            </div>
+        </div>
+
+        <div>
+            <label>2. AUDIO SOURCE (CLEAN SIGNAL)</label>
+            <!-- Button for Option 3: Software Loopback -->
+            <button id="btnSystem">CAPTURE SYSTEM AUDIO (SPOTIFY/YT)</button>
+
+            <!-- Button for Option 2: Hardware Loopback / Mic -->
+            <button id="btnMic" class="btn-secondary">USE STEREO MIX / MIC</button>
+
+            <div id="audio-monitor">Audio Signal: 0</div>
+        </div>
+    </div>
+
+    <!-- This links the HTML to your logic files -->
+    <script type="module" src="/main.js"></script>
+
+
+</body>
+
+</html>
