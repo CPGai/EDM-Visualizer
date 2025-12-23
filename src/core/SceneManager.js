@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 import { WaveSpikes } from '../modes/WaveSpikes.js';
 import { MeshSpikes } from '../modes/MeshSpikes.js';
+import { InkFluid } from '../modes/InkFluid.js';
+import { RippleWater } from '../modes/RippleWater.js';
 
 // Dictionary of available modes
 const MODES = {
     'WaveSpikes': WaveSpikes,
-    'MeshSpikes': MeshSpikes
+    'MeshSpikes': MeshSpikes,
+    'InkFluid': InkFluid,
+    'RippleWater': RippleWater
 };
 
 /**
@@ -25,7 +29,7 @@ export class SceneManager {
         });
 
         this.currentMode = null; // Holds the active animation object
-        this.currentModeName = 'WaveSpikes'; // Default mode
+        this.currentModeName = 'RippleWater'; // Set default to RippleWater for testing
         this.currentQuality = 1; // Default quality (Balanced)
         this.init();
     }

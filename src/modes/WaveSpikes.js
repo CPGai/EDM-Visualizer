@@ -1,12 +1,9 @@
 import * as THREE from 'three';
 
 /**
- * WaveSpikes.js - Ultra-High Density Version (RTX 3060)
- * Mode 1: A Kinetic Sphere using dense point-cloud rendering for "thick line" effect.
- * Features: 
- * - Extreme Polygon Count (Subdivision 15) for fluid-like surface
- * - Point-based rendering to simulate thicker, glowing lines
- * - HDR-style color mixing for brighter peaks
+ * WaveSpikes.js - Pure Color High-Density Version
+ * Mode 1: A Kinetic Sphere using dense point-cloud rendering.
+ * Update: Removed white saturation on high peaks to maintain pure palette colors.
  */
 
 export class WaveSpikes {
@@ -18,17 +15,14 @@ export class WaveSpikes {
 
     init(quality) {
         // 1. Geometry: "Ultra Fine Mesh"
-        // Detail 15 = ~250,000 vertices. This creates a near-solid surface of dots.
-        // We use points instead of wireframe lines to control "thickness" and glow.
+        // Detail 14 creates a very dense surface (~250k vertices at quality 2)
         let detail = 14;
-
         switch (quality) {
             case 0: detail = 4; break;  // ~2k verts (Low Power)
             case 1: detail = 10; break; // ~100k verts (Balanced)
             case 2: detail = 14; break; // ~250k verts (High)
-            case 3: detail = 20; break; // ~500k+ verts (Ultra - RTX 3060 killer?)
+            case 3: detail = 22; break; // Ultra (~10B+ vertices - Extreme)
         }
-
         const geometry = new THREE.IcosahedronGeometry(14, detail);
 
         // 2. Uniforms
@@ -44,12 +38,10 @@ export class WaveSpikes {
         // 3. Shader Material
         const material = new THREE.ShaderMaterial({
             uniforms: this.uniforms,
-            // We render as POINTS to allow size control (thickness)
             wireframe: false,
             transparent: true,
-            // Additive blending creates that "Neon Glow" when dots overlap
             blending: THREE.AdditiveBlending,
-            depthWrite: false, // Disabling depth write makes the center glow intensely
+            depthWrite: false,
 
             vertexShader: `
                 uniform float uTime;
@@ -110,9 +102,12 @@ export class WaveSpikes {
                 }
 
                 void main() {
+                    // High-Definition Noise (RTX 3060+)
                     float noise = snoise(position * 0.15 + uTime * 0.3);
                     
-                    // Stronger displacement for more "spiky" look
+                    noise += snoise(position * 0.6 + uTime * 0.4) * 0.25;
+                    noise += snoise(position * 1.2 + uTime * 0.7) * 0.15;
+                    
                     float displacement = (uBass * 6.0) + (noise * uTreble * 10.0);
                     vDisplacement = displacement;
 
@@ -122,8 +117,6 @@ export class WaveSpikes {
                     gl_Position = projectionMatrix * mvPosition;
 
                     // Point Size Logic (Thicker Lines)
-                    // Points get smaller as they get further away (perspective)
-                    // We boost the base size to 4.0 for that "thick" look
                     gl_PointSize = (4.0 + (uBass * 2.0)) * (50.0 / -mvPosition.z);
                     
                     vDistance = -mvPosition.z;
@@ -138,25 +131,23 @@ export class WaveSpikes {
                 varying float vDistance;
 
                 void main() {
-                    // Make points circular (soft particles)
                     vec2 cxy = 2.0 * gl_PointCoord - 1.0;
                     float r = dot(cxy, cxy);
                     if (r > 1.0) discard;
 
                     // Intense Color Mixing
-                    // We compress the range so colors change faster
                     float mixStr = smoothstep(-2.0, 12.0, vDisplacement);
                     
                     vec3 finalColor = mix(uColor1, uColor2, mixStr);
-                    // Add a "Hot White" core to the peaks for brightness
-                    if(mixStr > 0.6) {
-                        finalColor = mix(uColor2, uColor3, (mixStr - 0.6) * 2.5);
-                    }
-                    if(mixStr > 0.9) {
-                        finalColor = mix(finalColor, vec3(1.0, 1.0, 1.0), (mixStr - 0.9) * 10.0);
+                    
+                    // Add a "Hot" core using the 3rd palette color (Highlight)
+                    if(mixStr > 0.5) {
+                        finalColor = mix(finalColor, uColor3, (mixStr - 0.5) * 2.0);
                     }
 
-                    // Glow Falloff: Center of dot is bright, edge is soft
+                    // REMOVED: The logic that forced 'finalColor' to vec3(1.0) (White) at > 0.95 intensity.
+                    // This ensures the particles stay colored (e.g., pure Cyan/Pink/Yellow) even at max volume.
+
                     float alpha = (1.0 - r) * (0.6 + mixStr * 0.4); 
                     
                     gl_FragColor = vec4(finalColor, alpha);
@@ -164,7 +155,6 @@ export class WaveSpikes {
             `
         });
 
-        // Switch to Points instead of Mesh
         this.mesh = new THREE.Points(geometry, material);
     }
 
@@ -174,7 +164,6 @@ export class WaveSpikes {
         this.uniforms.uTime.value += 0.01;
 
         if (freqData) {
-            // Apply reactivity multiplier to audio sensitivity
             const bass = (freqData[5] / 255) * (reactivity * 0.6);
             const treble = (freqData[100] / 255) * (reactivity * 0.75);
 

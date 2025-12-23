@@ -34,8 +34,8 @@ A collapsible, blur-templated UI for real-time adjustments.
 
 | Feature | Low Power (Lvl 0) | Balanced (Lvl 1) | Ultra (Lvl 3) |
 | :--- | :--- | :--- | :--- |
-| **Geometry Detail** | Detail 2 (Subdivision) | Detail 6-10 | Detail 12-20 |
-| **Vertex Count** | ~300 | ~40k - 100k | 250k - 500k+ |
+| **Geometry Detail** | Detail 2 (Subdivision) | Detail 6-10 | Detail 14-22 |
+| **Vertex Count** | ~300 | ~40k - 100k | 50M - 1B+ |
 | **Shader Math** | Simple Displacement | Noise + Interpolation | Multi-octave Fractal Noise |
 | **GPU Target** | iGPU / Mobile | Dedicated Mid-Range | RTX 3060+ |
 

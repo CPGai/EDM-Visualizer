@@ -30,7 +30,9 @@
             overflow: hidden;
             width: 320px;
             height: auto;
-            max-height: 800px;
+            max-height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
         }
 
         #ui-root.collapsed {
@@ -48,6 +50,30 @@
             transition: opacity 0.3s ease, transform 0.3s ease;
             opacity: 1;
             transform: scale(1);
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex: 1;
+        }
+
+        /* Custom Neon Scrollbar */
+        #ui-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #ui-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        #ui-content::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+
+        #ui-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 255, 0.5);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
         }
 
         #ui-root.collapsed #ui-content {
@@ -342,6 +368,8 @@
                 <select id="modeSelect">
                     <option value="WaveSpikes">WaveSpikes (Points)</option>
                     <option value="MeshSpikes">MeshSpikes (Wireframe)</option>
+                    <option value="InkFluid">InkFluid (Smoke/Water)</option>
+                    <option value="RippleWater">RippleWater (Serene)</option>
                 </select>
             </div>
 

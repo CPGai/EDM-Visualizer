@@ -24,10 +24,10 @@ export class MeshSpikes {
         let detail = 6;
 
         switch (quality) {
-            case 0: detail = 2; break; // ~320 verts (Low Power)
-            case 1: detail = 6; break; // ~40k verts (Balanced)
-            case 2: detail = 8; break; // ~65k verts (High)
-            case 3: detail = 12; break;// ~150k verts (Ultra)
+            case 0: detail = 2; break; // Low Power (~320 faces)
+            case 1: detail = 6; break; // Balanced (~81k faces)
+            case 2: detail = 8; break; // High (~1.3M faces)
+            case 3: detail = 14; break; // Ultra (~300M+ faces)
         }
 
         const geometry = new THREE.IcosahedronGeometry(15, detail);
@@ -110,19 +110,22 @@ export class MeshSpikes {
                 }
 
                 void main() {
-                    // Calculate noise based on position and time
-                    float noise = snoise(position * 0.1 + uTime * 0.2);
+                    // Complexity scaling based on quality
+                    float noise = 0.0;
                     
-                    // Displacement Logic: 
-                    // Bass makes the whole shape breathe (uBass)
-                    // Treble makes the surface spike jaggedly (noise * uTreble)
+                    // Lvl 0-1: Basic noise
+                    noise = snoise(position * 0.1 + uTime * 0.2);
+                    
+                    // Lvl 2-3: Add detail layers (Definition)
+                    if (uTreble > 0.05) { // Only add extra math if there's signal
+                        noise += snoise(position * 0.4 + uTime * 0.5) * 0.2;
+                        noise += snoise(position * 0.8 + uTime * 0.8) * 0.1;
+                    }
+                    
                     float displacement = (uBass * 5.0) + (noise * uTreble * 8.0);
-                    
-                    vDisplacement = displacement; // Pass to fragment shader
+                    vDisplacement = displacement;
 
-                    // Push vertex OUT along its normal vector
                     vec3 newPosition = position + normal * displacement;
-                    
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
                 }
             `,
