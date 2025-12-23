@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 
 /**
- * WaveSpikes.js - Ultra-High Density Version (RTX 3060)
- * Mode 1: A Kinetic Sphere using dense point-cloud rendering for "thick line" effect.
+ * WaveSpikes.js - GPU Shader Version (RTX 3060 Optimized)
+ * Mode 1: A High-Density Kinetic Sphere using Vertex Shaders.
  * Features: 
- * - Extreme Polygon Count (Subdivision 15) for fluid-like surface
- * - Point-based rendering to simulate thicker, glowing lines
- * - HDR-style color mixing for brighter peaks
+ * - Fine Mesh (High Subdivision)
+ * - Multi-color Gradient Mapping (Uses 3 palette colors at once)
+ * - GPU-based Displacement (Noise + Audio)
  */
 
-export class WaveSpikes {
+export class MeshSpikes {
     constructor(quality = 1) {
         this.mesh = null;
         this.uniforms = null;
@@ -17,48 +17,48 @@ export class WaveSpikes {
     }
 
     init(quality) {
-        // 1. Geometry: "Ultra Fine Mesh"
-        // Detail 15 = ~250,000 vertices. This creates a near-solid surface of dots.
-        // We use points instead of wireframe lines to control "thickness" and glow.
-        let detail = 14;
+        // 1. Geometry: "Fine Mesh"
+        // Increased radius to 15 (fills screen) and detail to 6 (very dense wireframe)
+        // Detail 6 = ~40,000 triangles. Easy for RTX 3060.
+
+        let detail = 6;
 
         switch (quality) {
-            case 0: detail = 4; break;  // ~2k verts (Low Power)
-            case 1: detail = 10; break; // ~100k verts (Balanced)
-            case 2: detail = 14; break; // ~250k verts (High)
-            case 3: detail = 20; break; // ~500k+ verts (Ultra - RTX 3060 killer?)
+            case 0: detail = 2; break; // ~320 verts (Low Power)
+            case 1: detail = 6; break; // ~40k verts (Balanced)
+            case 2: detail = 8; break; // ~65k verts (High)
+            case 3: detail = 12; break;// ~150k verts (Ultra)
         }
 
-        const geometry = new THREE.IcosahedronGeometry(14, detail);
+        const geometry = new THREE.IcosahedronGeometry(15, detail);
 
-        // 2. Uniforms
+        // 2. Uniforms: Variables we send to the GPU every frame
         this.uniforms = {
             uTime: { value: 0 },
             uBass: { value: 0.0 },
             uTreble: { value: 0.0 },
+            // Default Gradient Colors (Cyan -> Pink -> Yellow)
             uColor1: { value: new THREE.Color(0x00ffff) },
             uColor2: { value: new THREE.Color(0xff00ff) },
             uColor3: { value: new THREE.Color(0xffff00) }
         };
 
-        // 3. Shader Material
+        // 3. Shader Material: The "Brain" of the visual
         const material = new THREE.ShaderMaterial({
             uniforms: this.uniforms,
-            // We render as POINTS to allow size control (thickness)
-            wireframe: false,
+            wireframe: true, // This creates the "Net/Mesh" look
+            side: THREE.DoubleSide,
             transparent: true,
-            // Additive blending creates that "Neon Glow" when dots overlap
-            blending: THREE.AdditiveBlending,
-            depthWrite: false, // Disabling depth write makes the center glow intensely
+            blending: THREE.AdditiveBlending, // Makes overlapping lines glow
 
+            // Vertex Shader: Moves the points (The Shape)
             vertexShader: `
                 uniform float uTime;
                 uniform float uBass;
                 uniform float uTreble;
-                varying float vDisplacement;
-                varying float vDistance;
+                varying float vDisplacement; // Send to Fragment Shader for coloring
 
-                // Simplex Noise (Optimized)
+                // Simplex Noise Function (GPU Math)
                 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
                 vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
                 vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
@@ -110,85 +110,82 @@ export class WaveSpikes {
                 }
 
                 void main() {
-                    float noise = snoise(position * 0.15 + uTime * 0.3);
+                    // Calculate noise based on position and time
+                    float noise = snoise(position * 0.1 + uTime * 0.2);
                     
-                    // Stronger displacement for more "spiky" look
-                    float displacement = (uBass * 6.0) + (noise * uTreble * 10.0);
-                    vDisplacement = displacement;
+                    // Displacement Logic: 
+                    // Bass makes the whole shape breathe (uBass)
+                    // Treble makes the surface spike jaggedly (noise * uTreble)
+                    float displacement = (uBass * 5.0) + (noise * uTreble * 8.0);
+                    
+                    vDisplacement = displacement; // Pass to fragment shader
 
+                    // Push vertex OUT along its normal vector
                     vec3 newPosition = position + normal * displacement;
-                    vec4 mvPosition = modelViewMatrix * vec4(newPosition, 1.0);
                     
-                    gl_Position = projectionMatrix * mvPosition;
-
-                    // Point Size Logic (Thicker Lines)
-                    // Points get smaller as they get further away (perspective)
-                    // We boost the base size to 4.0 for that "thick" look
-                    gl_PointSize = (4.0 + (uBass * 2.0)) * (50.0 / -mvPosition.z);
-                    
-                    vDistance = -mvPosition.z;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
                 }
             `,
 
+            // Fragment Shader: Colors the pixels (The Look)
             fragmentShader: `
-                uniform vec3 uColor1;
-                uniform vec3 uColor2;
-                uniform vec3 uColor3;
+                uniform vec3 uColor1; // Deep/Base Color
+                uniform vec3 uColor2; // Mid/Main Color
+                uniform vec3 uColor3; // High/Peak Color
                 varying float vDisplacement;
-                varying float vDistance;
 
                 void main() {
-                    // Make points circular (soft particles)
-                    vec2 cxy = 2.0 * gl_PointCoord - 1.0;
-                    float r = dot(cxy, cxy);
-                    if (r > 1.0) discard;
-
-                    // Intense Color Mixing
-                    // We compress the range so colors change faster
-                    float mixStr = smoothstep(-2.0, 12.0, vDisplacement);
+                    // Map displacement to a 0.0 - 1.0 range for mixing
+                    // Adjust '10.0' depending on how high the spikes get
+                    float mixStr = smoothstep(-5.0, 15.0, vDisplacement);
                     
+                    // Gradient Logic:
+                    // Low displacement = Color 1 -> Color 2
+                    // High displacement = Color 2 -> Color 3
                     vec3 finalColor = mix(uColor1, uColor2, mixStr);
-                    // Add a "Hot White" core to the peaks for brightness
-                    if(mixStr > 0.6) {
-                        finalColor = mix(uColor2, uColor3, (mixStr - 0.6) * 2.5);
-                    }
-                    if(mixStr > 0.9) {
-                        finalColor = mix(finalColor, vec3(1.0, 1.0, 1.0), (mixStr - 0.9) * 10.0);
+                    if(mixStr > 0.5) {
+                        finalColor = mix(uColor2, uColor3, (mixStr - 0.5) * 2.0);
                     }
 
-                    // Glow Falloff: Center of dot is bright, edge is soft
-                    float alpha = (1.0 - r) * (0.6 + mixStr * 0.4); 
+                    // Calculate Alpha (Transparency)
+                    // The "Deep" parts are more transparent, "Spikes" are solid
+                    float alpha = 0.3 + (mixStr * 0.7); 
                     
                     gl_FragColor = vec4(finalColor, alpha);
                 }
             `
         });
 
-        // Switch to Points instead of Mesh
-        this.mesh = new THREE.Points(geometry, material);
+        this.mesh = new THREE.Mesh(geometry, material);
     }
 
     update(freqData, palette, reactivity = 2.0) {
         if (!this.mesh) return;
 
+        // 1. Update Time (Slow flow)
         this.uniforms.uTime.value += 0.01;
 
+        // 2. Update Audio Data
         if (freqData) {
             // Apply reactivity multiplier to audio sensitivity
-            const bass = (freqData[5] / 255) * (reactivity * 0.6);
-            const treble = (freqData[100] / 255) * (reactivity * 0.75);
+            const bass = (freqData[5] / 255) * (reactivity * 0.5);
+            const treble = (freqData[100] / 255) * (reactivity * 0.5);
 
-            this.uniforms.uBass.value += (bass - this.uniforms.uBass.value) * 0.2;
-            this.uniforms.uTreble.value += (treble - this.uniforms.uTreble.value) * 0.2;
+            // Smooth interpolation (prevent jittery movement)
+            this.uniforms.uBass.value += (bass - this.uniforms.uBass.value) * 0.15;
+            this.uniforms.uTreble.value += (treble - this.uniforms.uTreble.value) * 0.15;
         }
 
+        // 3. Update Gradient from Palette
+        // We grab the Top 3 colors to create the gradient
         if (palette && palette.length >= 3) {
             this.uniforms.uColor1.value.set(palette[0]);
             this.uniforms.uColor2.value.set(palette[1]);
             this.uniforms.uColor3.value.set(palette[2]);
         }
 
-        this.mesh.rotation.y += 0.002;
+        // 4. Rotate the whole system
+        this.mesh.rotation.y += 0.001;
         this.mesh.rotation.z += 0.001;
     }
 }

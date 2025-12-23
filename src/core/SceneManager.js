@@ -1,5 +1,12 @@
 import * as THREE from 'three';
 import { WaveSpikes } from '../modes/WaveSpikes.js';
+import { MeshSpikes } from '../modes/MeshSpikes.js';
+
+// Dictionary of available modes
+const MODES = {
+    'WaveSpikes': WaveSpikes,
+    'MeshSpikes': MeshSpikes
+};
 
 /**
  * SceneManager.js - Active Mode Version
@@ -18,6 +25,8 @@ export class SceneManager {
         });
 
         this.currentMode = null; // Holds the active animation object
+        this.currentModeName = 'WaveSpikes'; // Default mode
+        this.currentQuality = 1; // Default quality (Balanced)
         this.init();
     }
 
@@ -38,9 +47,8 @@ export class SceneManager {
         this.camera.position.set(0, 0, 40);
         this.camera.lookAt(0, 0, 0);
 
-        // 3. Initialize Mode 1: WaveSpikes
-        this.currentMode = new WaveSpikes();
-        this.scene.add(this.currentMode.mesh);
+        // 3. Initialize Default Mode: WaveSpikes
+        this.switchMode('WaveSpikes');
 
         // 4. Lighting (Standard Setup)
         const light = new THREE.PointLight(0xffffff, 1, 100);
@@ -51,7 +59,39 @@ export class SceneManager {
         this.scene.add(ambient);
 
         window.addEventListener('resize', () => this.onWindowResize(), false);
-        console.log("SceneManager: Switched to WaveSpikes Mode.");
+        console.log("SceneManager: Initialized.");
+    }
+
+    switchMode(modeName) {
+        if (!MODES[modeName]) {
+            console.error(`Mode ${modeName} not found!`);
+            return;
+        }
+
+        // Store active mode name so we can re-init if quality changes
+        this.currentModeName = modeName;
+
+        // 1. Cleanup old mode
+        if (this.currentMode) {
+            this.scene.remove(this.currentMode.mesh);
+            // If the mode has a dispose/cleanup method, you'd call it here
+            if (this.currentMode.dispose) this.currentMode.dispose();
+        }
+
+        // 2. Init new mode with current quality
+        this.currentMode = new MODES[modeName](this.currentQuality);
+        this.scene.add(this.currentMode.mesh);
+
+        console.log(`SceneManager: Switched to ${modeName} (Quality: ${this.currentQuality})`);
+    }
+
+    setQuality(quality) {
+        if (this.currentQuality === quality) return;
+        this.currentQuality = quality;
+        console.log(`SceneManager: Quality set to ${quality}`);
+
+        // Reload current mode with new quality
+        this.switchMode(this.currentModeName);
     }
 
     onWindowResize() {
@@ -64,9 +104,9 @@ export class SceneManager {
         this.renderer.render(this.scene, this.camera);
     }
 
-    update(freqData, palette) {
+    update(freqData, palette, reactivity) {
         if (this.currentMode && this.currentMode.update) {
-            this.currentMode.update(freqData, palette);
+            this.currentMode.update(freqData, palette, reactivity);
         }
     }
 }

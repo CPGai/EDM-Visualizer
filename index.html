@@ -22,12 +22,85 @@
             left: 20px;
             z-index: 10;
             background: rgba(0, 0, 0, 0.85);
-            padding: 25px;
             border-radius: 12px;
             border: 1px solid #333;
             backdrop-filter: blur(10px);
-            width: 300px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            width: 320px;
+            height: auto;
+            max-height: 800px;
+        }
+
+        #ui-root.collapsed {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            border-color: #00ffff;
+            background: rgba(0, 255, 255, 0.1);
+            max-height: 48px;
+        }
+
+        #ui-content {
+            padding: 25px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #ui-root.collapsed #ui-content {
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+            display: none;
+        }
+
+        #ui-gear {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.5s ease;
+            pointer-events: none;
+            color: #00ffff;
+        }
+
+        #ui-root.collapsed #ui-gear {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #ui-root.collapsed:hover #ui-gear {
+            transform: rotate(90deg);
+        }
+
+        .toggle-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 24px !important;
+            height: 24px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #fff !important;
+            border-radius: 4px !important;
+            font-size: 18px !important;
+            line-height: 1 !important;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2) !important;
         }
 
         h2 {
@@ -47,18 +120,40 @@
 
         /* The Palette Swatches */
         .palette {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
             gap: 8px;
             margin: 15px 0;
-            flex-wrap: wrap;
+            width: 100%;
         }
 
         .swatch {
-            width: 40px;
-            height: 40px;
+            width: 100%;
+            aspect-ratio: 1;
             border-radius: 6px;
             border: 1px solid #555;
-            transition: transform 0.2s;
+            transition: transform 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+
+        .swatch.selected {
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px #00ffff;
+            transform: scale(1.05);
+            z-index: 2;
+        }
+
+        #imgPreview {
+            width: 100%;
+            height: 150px;
+            object-fit: contain;
+            /* or cover, depending on preference */
+            background: #111;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: none;
+            /* Hidden until upload */
+            border: 1px solid #333;
         }
 
         .swatch:hover {
@@ -116,6 +211,88 @@
             margin-top: 5px;
             color: #888;
         }
+
+        /* Mode Selection Dropdown */
+        select {
+            width: 100%;
+            padding: 12px;
+            background: #222;
+            color: #00ffff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 8px;
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300ffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+
+        select:hover {
+            border-color: #00ffff;
+        }
+
+        select option {
+            background: #111;
+            color: #fff;
+        }
+
+        /* Reactivity Slider Styles */
+        .slider-container {
+            margin-top: 25px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .slider-value {
+            color: #00ffff;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #333;
+            border-radius: 2px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #00ffff;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -7px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        input[type="range"]:hover::-webkit-slider-thumb {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        }
     </style>
 
 
@@ -124,25 +301,72 @@
 <body>
     <!-- This is the control panel the user interacts with -->
     <div id="ui-root">
-        <h2>Visualizer Setup</h2>
-
-        <div style="margin-bottom: 25px;">
-            <label>1. COLOR INSPIRATION</label>
-            <input type="file" id="imgUpload" accept="image/*">
-            <div id="paletteContainer" class="palette">
-                <!-- Color swatches will appear here after upload -->
-            </div>
+        <!-- Collapsed Gear Icon -->
+        <div id="ui-gear">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                </path>
+            </svg>
         </div>
 
-        <div>
-            <label>2. AUDIO SOURCE (CLEAN SIGNAL)</label>
-            <!-- Button for Option 3: Software Loopback -->
-            <button id="btnSystem">CAPTURE SYSTEM AUDIO (SPOTIFY/YT)</button>
+        <!-- Expanded Content -->
+        <div id="ui-content">
+            <button id="btnClose" class="toggle-btn" title="Collapse">×</button>
+            <h2>Visualizer Setup</h2>
 
-            <!-- Button for Option 2: Hardware Loopback / Mic -->
-            <button id="btnMic" class="btn-secondary">USE STEREO MIX / MIC</button>
+            <div style="margin-bottom: 25px;">
+                <label>1. COLOR INSPIRATION</label>
+                <img id="imgPreview" alt="Preview">
+                <input type="file" id="imgUpload" accept="image/*">
+                <div id="paletteContainer" class="palette">
+                    <!-- Color swatches will appear here after upload -->
+                </div>
+            </div>
 
-            <div id="audio-monitor">Audio Signal: 0</div>
+            <div>
+                <label>2. AUDIO SOURCE (CLEAN SIGNAL)</label>
+                <!-- Button for Option 3: Software Loopback -->
+                <button id="btnSystem">CAPTURE SYSTEM AUDIO (SPOTIFY/YT)</button>
+
+                <!-- Button for Option 2: Hardware Loopback / Mic -->
+                <button id="btnMic" class="btn-secondary">USE STEREO MIX / MIC</button>
+
+                <div id="audio-monitor">Audio Signal: 0</div>
+            </div>
+
+            <div style="margin-top: 25px;">
+                <label>3. ANIMATION MODE</label>
+                <select id="modeSelect">
+                    <option value="WaveSpikes">WaveSpikes (Points)</option>
+                    <option value="MeshSpikes">MeshSpikes (Wireframe)</option>
+                </select>
+            </div>
+
+            <div class="slider-container">
+                <div class="slider-header">
+                    <label>4. ANIMATION REACTIVITY</label>
+                    <span id="reactivityValue" class="slider-value">2.0</span>
+                </div>
+                <input type="range" id="reactivity" min="1" max="5" step="0.1" value="2.0">
+            </div>
+
+            <div class="slider-container">
+                <div class="slider-header">
+                    <label>5. GPU STRENGTH (QUALITY)</label>
+                    <span id="qualityValue" class="slider-value">1: BALANCED</span>
+                </div>
+                <input type="range" id="quality" min="0" max="3" step="1" value="1">
+                <div
+                    style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #666; margin-top: 4px;">
+                    <span>LOW</span>
+                    <span>BAL</span>
+                    <span>HIGH</span>
+                    <span>ULTRA</span>
+                </div>
+            </div>
         </div>
     </div>
 
